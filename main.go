@@ -219,5 +219,8 @@ var green = color.New(color.FgGreen).SprintFunc()
 
 func stripBucket(s3Path string) string {
 	i := strings.Index(s3Path, "/")
+	if i < 0 {
+		return ""
+	}
 	return s3Path[i+1:]
 }
