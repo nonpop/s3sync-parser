@@ -35,17 +35,17 @@ func main() {
 
 	ds, us, ms := extractMoves(ds, us)
 
-	printOld(ms, ds, us, ss)
+	printDropboxCache(ms, ds, us, ss)
 	printOthers(ms, ds, us, ss)
 }
 
 type delete struct {
-	old    bool
-	s3Path string
+	dropboxCache bool
+	s3Path       string
 }
 
 type upload struct {
-	old       bool
+	cache     bool
 	localPath string
 	s3Path    string
 }
@@ -70,8 +70,8 @@ func parseDelete(s string) *delete {
 		return nil
 	}
 	return &delete{
-		old:    isOld(s),
-		s3Path: strings.TrimPrefix(s, prefix),
+		dropboxCache: isDropboxCache(s),
+		s3Path:       strings.TrimPrefix(s, prefix),
 	}
 }
 
@@ -92,14 +92,14 @@ func parseUpload(s string) *upload {
 	s3Path := strings.TrimPrefix(s[i:], midfix)
 
 	return &upload{
-		old:       isOld(s),
+		cache:     isDropboxCache(s),
 		localPath: localPath,
 		s3Path:    s3Path,
 	}
 }
 
-func isOld(s string) bool {
-	return strings.Contains(s, "/.dropbox.cache/old_files/")
+func isDropboxCache(s string) bool {
+	return strings.Contains(s, "/.dropbox.cache/")
 }
 
 type move struct {
@@ -149,7 +149,7 @@ func dirName(s string) string {
 	return s[0:i]
 }
 
-func printOld(ms []move, ds []delete, us []upload, ss []string) {
+func printDropboxCache(ms []move, ds []delete, us []upload, ss []string) {
 	printAll(ms, ds, us, ss, true)
 }
 
@@ -157,24 +157,24 @@ func printOthers(ms []move, ds []delete, us []upload, ss []string) {
 	printAll(ms, ds, us, ss, false)
 }
 
-func printAll(ms []move, ds []delete, us []upload, ss []string, old bool) {
-	if !old {
+func printAll(ms []move, ds []delete, us []upload, ss []string, cache bool) {
+	if !cache {
 		for _, x := range ms {
 			printMove(x)
 		}
 	}
 	for _, x := range ds {
-		if x.old == old {
+		if x.dropboxCache == cache {
 			printDelete(x)
 		}
 	}
 	for _, x := range us {
-		if x.old == old {
+		if x.cache == cache {
 			printUpload(x)
 		}
 	}
 	printSeparator()
-	if !old {
+	if !cache {
 		for _, x := range ss {
 			printUnrecognized(x)
 		}
@@ -183,7 +183,7 @@ func printAll(ms []move, ds []delete, us []upload, ss []string, old bool) {
 
 func printDelete(x delete) {
 	c := red
-	if x.old {
+	if x.dropboxCache {
 		c = gray
 	}
 	fmt.Printf("DELETE: %s\n", c(stripBucket(x.s3Path)))
@@ -191,7 +191,7 @@ func printDelete(x delete) {
 
 func printUpload(x upload) {
 	c := green
-	if x.old {
+	if x.cache {
 		c = gray
 	}
 	fmt.Printf("NEW: %s\n", c(stripBucket(x.s3Path)))
